@@ -5,6 +5,7 @@ import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Loader } from './Loader/Loader';
 import { Button } from './Button/Button';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
+ 
 
 export const App = () => {
   const [images, setImages] = useState([]);
@@ -14,6 +15,7 @@ export const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  
   useEffect(() => {
     if (currentSearchValue === '') {
       return;
