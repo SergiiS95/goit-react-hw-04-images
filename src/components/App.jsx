@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { fetchImages } from '../Services/Api';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -6,81 +6,67 @@ import { Loader } from './Loader/Loader';
 import { Button } from './Button/Button';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-export class App extends Component {
-  state = {
-    images: [],
-    currentSearchValue: '',
-    page: 1,
-    totalImages: 0,
-    loading: false,
-    error: null,
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [currentSearchValue, setCurrentSearchValue] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalImages, setTotalImages] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.currentSearchValue !== this.state.currentSearchValue ||
-      prevState.page !== this.state.page
-    ) {
-      this.addImages();
+  useEffect(() => {
+    if (currentSearchValue === '') {
+      return;
     }
-  }
+    const addImages = async () => {
+      try {
+        setLoading(true);
 
-  handleSubmit = query => {
-    this.setState({
-      currentSearchValue: query,
-      images: [],
-      page: 1,
-      totalImages: 0,
-    });
-  };
+        const dataImages = await fetchImages(currentSearchValue, page);
 
-  addImages = async () => {
-    const { currentSearchValue, page } = this.state;
-    try {
-      this.setState({ loading: true });
-
-      const dataImages = await fetchImages(currentSearchValue, page);
-
-      if (dataImages.hits.length === 0) {
-        Notify.failure('Sorry image not found...');
-        return;
+        if (dataImages.hits.length === 0) {
+          Notify.failure('Sorry image not found...');
+          return;
+        }
+        const imagesArray = normalizedImages(dataImages.hits);
+        setImages(prevImages => [...prevImages, ...imagesArray]);
+        setError('');
+        setTotalImages(dataImages.totalHits);
+      } catch (error) {
+        setError(`Something went wrong! ${error.message}`);
+        Notify.failure(`Something went wrong! ${error.message}`);
+      } finally {
+        setLoading(false);
       }
-      const imagesArray = this.normalizedImages(dataImages.hits);
-      this.setState({
-        images: [...this.state.images, ...imagesArray],
-        error: '',
-        totalImages: dataImages.totalHits,
+    };
+
+    const normalizedImages = imagesArray =>
+      imagesArray.map(({ id, tags, webformatURL, largeImageURL }) => {
+        return { id, tags, webformatURL, largeImageURL };
       });
-    } catch (error) {
-      this.setState({ error: 'Something went wrong!' });
-    } finally {
-      this.setState({ loading: false });
-    }
+
+    addImages();
+  }, [currentSearchValue, page]);
+
+  const handleSubmit = query => {
+    setCurrentSearchValue(query);
+    setImages([]);
+    setPage(1);
+    setTotalImages(0);
   };
 
-  normalizedImages = imagesArray =>
-    imagesArray.map(({ id, tags, webformatURL, largeImageURL }) => {
-      return { id, tags, webformatURL, largeImageURL };
-    });
-
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const loadMore = () => {
+    setPage(prevPage => (prevPage = prevPage + 1));
   };
 
-  render() {
-    const { images, loading, totalImages } = this.state;
-
-    return (
-      <div>
-        <Searchbar onSubmit={this.handleSubmit} />
-        <ImageGallery images={images} />
-        {loading && <Loader />}
-        {!loading && images.length !== totalImages && (
-          <Button onClick={this.loadMore} />
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div>
+      <Searchbar onSubmit={handleSubmit} />
+      <ImageGallery images={images} />
+      {loading && <Loader />}
+      {!loading && images.length !== totalImages && (
+        <Button onClick={loadMore} />
+      )}
+    </div>
+  );
+};
