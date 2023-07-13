@@ -13,9 +13,9 @@ export const App = () => {
   const [page, setPage] = useState(1);
   const [totalImages, setTotalImages] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  
+
+
   useEffect(() => {
     if (currentSearchValue === '') {
       return;
@@ -32,10 +32,8 @@ export const App = () => {
         }
         const imagesArray = normalizedImages(dataImages.hits);
         setImages(prevImages => [...prevImages, ...imagesArray]);
-        setError('');
         setTotalImages(dataImages.totalHits);
       } catch (error) {
-        setError(`Something went wrong! ${error.message}`);
         Notify.failure(`Something went wrong! ${error.message}`);
       } finally {
         setLoading(false);
